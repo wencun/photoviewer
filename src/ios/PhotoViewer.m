@@ -6,7 +6,7 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 
 @interface PhotoViewer : CDVPlugin <UIDocumentInteractionControllerDelegate> {
-  // Member variables go here.
+    // Member variables go here.
 }
 
 @property (nonatomic, strong) UIDocumentInteractionController *docInteractionController;
@@ -31,10 +31,10 @@
 
 - (UIDocumentInteractionController *) setupControllerWithURL: (NSURL*) fileURL
                                                usingDelegate: (id <UIDocumentInteractionControllerDelegate>) interactionDelegate {
-
+    
     UIDocumentInteractionController *interactionController = [UIDocumentInteractionController interactionControllerWithURL: fileURL];
     interactionController.delegate = interactionDelegate;
-
+    
     return interactionController;
 }
 
@@ -57,13 +57,13 @@
     CDVPluginResult* pluginResult = nil;
     NSString* url = [command.arguments objectAtIndex:0];
     NSString* title = [command.arguments objectAtIndex:1];
-
+    
     if (url != nil && [url length] > 0) {
         [self.commandDelegate runInBackground:^{
             self.documentURLs = [NSMutableArray array];
-
+            
             NSURL *URL = [self localFileURLForImage:url];
-
+            
             if (URL) {
                 [self.documentURLs addObject:URL];
                 [self setupDocumentControllerWithURL:URL andTitle:title];
@@ -79,7 +79,7 @@
     } else {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
     }
-
+    
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
@@ -88,18 +88,23 @@
     // save this image to a temp folder
     NSURL *tmpDirURL = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
     NSString *filename = [[NSUUID UUID] UUIDString];
-    NSURL *fileURL = [NSURL URLWithString:image];
+    NSURL *fileURL = nil;
+    if (image && [[image substringToIndex:9] containsString:@"/private/"]) {
+        fileURL = [NSURL fileURLWithPath:image];
+    }else{
+        fileURL = [NSURL URLWithString:image];
+    }
     if ([fileURL isFileReferenceURL]) {
         return fileURL;
     }
-
+    
     NSData *data = [NSData dataWithContentsOfURL:fileURL];
-
+    
     if( data ) {
         fileURL = [[tmpDirURL URLByAppendingPathComponent:filename] URLByAppendingPathExtension:[self contentTypeForImageData:data]];
-
+        
         [[NSFileManager defaultManager] createFileAtPath:[fileURL path] contents:data attributes:nil];
-
+        
         return fileURL;
     } else {
         return nil;
@@ -109,7 +114,7 @@
 - (NSString *)contentTypeForImageData:(NSData *)data {
     uint8_t c;
     [data getBytes:&c length:1];
-
+    
     switch (c) {
         case 0xFF:
             return @"jpeg";
@@ -127,3 +132,4 @@
 }
 
 @end
+
